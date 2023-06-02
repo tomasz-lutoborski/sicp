@@ -177,9 +177,13 @@
 (define (smallest-divisor n) (find-divisor n 2))
 
 (define (find-divisor n test-divisor)
+  (define (next divisor)
+    (if (= divisor 2)
+        3
+        (+ divisor 2)))
   (cond ((> (square test-divisor) n) n)
         ((divides? test-divisor n) test-divisor)
-        (else (find-divisor n (+ test-divisor 1)))))
+        (else (find-divisor n (next test-divisor)))))
 
 (define (divides? a b) (= (remainder b a) 0))
 
@@ -213,7 +217,7 @@
   (start-prime-test n (runtime)))
 
 (define (start-prime-test n start-time)
-  (if (prime? n)
+  (if (fast-prime? n)
     (report-prime (- (runtime) start-time))))
 
 (define (report-prime elapsed-time)
@@ -225,3 +229,57 @@
       (search-for-primes (+ start 1) end)
       (cond ((> start end) (newline) (display "Done!"))
             (else (timed-prime-test start) (search-for-primes (+ start 2) end)))))
+
+(define (miller-rabin-test n)
+  (define (try-it a)
+    (= (expmod-checked a (- n 1) n) 1))
+  (try-it (+ 1 (random (- n 1)))))
+
+(define (expmod-checked base exp m)
+  (cond ((= exp 0) 1)
+        ((even? exp)
+         (remainder-square-checked (expmod-checked base (/ exp 2) m) m))
+        (else
+         (remainder (* base (expmod-checked base (- exp 1) m))
+                    m))))
+
+(define (remainder-square-checked a m)
+  (if (not (or (= a 1) (= a (- m 1))))
+      0
+      (remainder (square a) m)))
+
+(define (miller-rabin-prime?  n times)
+  (cond ((= times 0) #t)
+        ((miller-rabin-test n)
+         (miller-rabin-prime? n (- times 1)))
+        (else #f)))
+
+(define (cube x) (* x x x))
+
+(define (sum-integers a b)
+  (if (> a b)
+    0
+    (+ a (sum-integers (+ a 1) b))))
+
+(define (pi-sum a b)
+  (if (> a b)
+    0
+    (+ (/ 1.0 (* a (+ a 2)))
+       (pi-sum (+ a 4) b))))
+
+(define (sum term a next b)
+  (if (> a b)
+    0
+    (+ (term a)
+       (sum term (next a) next b))))
+
+(define (inc n) (+ n 1))
+
+(define (sum-cubes a b)
+  (sum cube a inc b))
+
+(define (integral f a b dx)
+  (define (add-dx x)
+    (+ x dx))
+  (* (sum f (+ a (/ dx 2.0)) add-dx b
+      dx)))
