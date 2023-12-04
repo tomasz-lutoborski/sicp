@@ -1,5 +1,3 @@
-#lang racket
-
 (define (make-leaf symbol weight) (list 'leaf symbol weight))
 (define (leaf? object) (eq? (car object) 'leaf))
 (define (symbol-leaf x) (cadr x))
@@ -14,6 +12,16 @@
 (define (left-branch tree) (car tree)) 
 
 (define (right-branch tree) (cadr tree))
+
+(define sample-tree
+	(make-code-tree (make-leaf 'A 4)
+									(make-code-tree
+									 (make-leaf 'B 2)
+									 (make-code-tree
+										(make-leaf 'D 1)
+										(make-leaf 'C 1)))))
+
+(define sample-message '(0 1 1 0 0 1 0 1 0 1 1 1 0))
 
 (define (symbols tree)
   (if (leaf? tree)
@@ -42,3 +50,25 @@
         ((= bit 1) (right-branch branch))
         (else (error "bad bit: CHOOSE-BRANCH" bit))))
 
+(define (adjoin-set x set)
+	(cond ((null? set) (list x))
+				((< (weight x) (weight (car set))) (cons x set))
+				(else (cons (car set)
+										(adjoin-set x (cdr set))))))
+
+(define (encode message tree)
+	(if (null? message)
+			'()
+			(append (encode-symbol (car message) tree)
+							(encode (cdr message) tree))))
+
+(define (encode-symbol symbol tree)
+	(if (leaf? tree)
+			'()
+			(let ((left (left-branch tree))
+						(right (right-branch tree)))
+				(cond ((memq symbol (symbols left))
+							 (cons 0 (encode-symbol symbol left)))
+							((memq symbol (symbols right))
+							 (cons 1 (encode-symbol symbol right)))
+							(else (error "bad symbol: ENCODE-SYMBOL" symbol))))))
